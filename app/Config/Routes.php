@@ -37,15 +37,28 @@ $routes->set404Override();
 
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
-$routes->get('/', 'AuthController::register');
+$routes->get('/', 'MainController::index');
 
-$routes->get('login', 'Login::index');
+$routes->get('index', 'MainController::index', ['as' => 'index']);
+$routes->get('about_us', 'MainController::about_us', ['as' => 'about_us']);
+
 $routes->get('register', 'AuthController::register', ['as' => 'register']);
+$routes->get('activate/(:any)', 'AuthController::activate/$1');
 $routes->post('save', 'AuthController::save', ['as' => 'save']);
-$routes->post('login', 'Login::post', ['as' => 'post']);
-$routes->get('forgotpassword', 'Login::forgotpassword', ['as' => 'forgotpassword']);
-$routes->post('forgotpassword', 'Login::postforgot', ['as' => 'postforgot']);
-$routes->post('newpassword', 'Login::postchange', ['as' => 'postchange']);
+
+$routes->match(['get', 'post'], 'LoginController/loginAuth', 'LoginController::loginAuth');
+$routes->get('login', 'LoginController::index');
+$routes->get('logout', 'LoginController::logout');
+
+$routes->get('profile', 'MainController::profile', ['as' => 'profile']);
+
+$routes->get('courses', 'MainController::courses', ['as' => 'courses']);
+$routes->post('getlevels', 'LevelController::getlevels');
+$routes->get('levels/(:num)', 'LevelController::levels/$1', ['as' => 'levels']);
+$routes->post('getcontent', 'LevelController::getcontent');
+$routes->get('level_content/(:num)', 'LevelController::level_content/$1', ['as' => 'level_content']);
+
+$routes->get('dashboard', 'Admin\Dashboard::index', ['as' => 'dashboard']);
 
 /*
  * --------------------------------------------------------------------

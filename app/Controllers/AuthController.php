@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Libraries\Hash;
+use App\Models\StudentModel;
 
 class AuthController extends BaseController
 {
@@ -18,6 +19,37 @@ class AuthController extends BaseController
     {
         return view('auth/register');
     }
+
+    public function activate($link_here)
+    {
+        $user = new UserModel();
+        $check_user_link = $user->where('link', $link_here)->findAll();
+
+        if (count($check_user_link) > 0) {
+            $temp_data['status'] = 1;
+            $activate_user = $user->update($check_user_link[0]['user_id'], $temp_data);
+
+            if ($activate_user) {
+                $user_id = $check_user_link[0]['user_id'];
+                $enrollment_date = date('Y-m-d');
+
+                $student_values = [
+                    'user_id' => $user_id,
+                    'enrollment_date' => $enrollment_date,
+                ];
+
+                $studentModel = new StudentModel();
+                $query = $studentModel->insert($student_values);
+
+                return  redirect()->to('login')->with('success', 'Account activated successfully. Please login.');
+            } else {
+                return  redirect()->to('login')->with('fail', 'Account not activated. Please activate account.');
+            }
+        } else {
+            return  redirect()->to('login')->with('fail', 'Account not activated. Please activate account.');
+        }
+    }
+
 
     public function save()
     {
@@ -34,16 +66,11 @@ class AuthController extends BaseController
                     'required' => 'Last name is required',
                 ],
             ],
-            'gender' => [
-                'rules'  => 'required',
-                'errors' => [
-                    'required' => 'Gender is required',
-                ],
-            ],
             'dob' => [
-                'rules'  => 'required',
+                'rules'  => 'required|validate_age',
                 'errors' => [
                     'required' => 'Date of birth is required',
+                    'validate_age' => 'You must be at least 13 years to make an account',
                 ],
             ],
             'email' => [
@@ -79,44 +106,40 @@ class AuthController extends BaseController
             $last_name = $this->request->getPost('last_name');
             $gender = $this->request->getPost('gender');
             $dob = $this->request->getPost('dob');
-            $email = $this->request->getPost('email');
+            $user_email = $this->request->getPost('email');
             $password = $this->request->getPost('password');
-            $role = 'user';
-            $code = uniqid();
-            $user_email = $email;
+            $link = uniqid();
 
             $values = [
                 'first_name' => $first_name,
                 'last_name' => $last_name,
                 'gender' => $gender,
                 'dob' => $dob,
-                'email' => $email,
-                'password' => Hash::make($password),
-                'role' => $role
+                'email' => $user_email,
+                'password' => password_hash("$password", PASSWORD_DEFAULT),
+                'link' => $link
             ];
 
-
-            $message = "Please activate your account. " . anchor('user/activate/' . $code, 'Activate Now', '');
-
-            $email = \Config\Services::email();
-
-            $email->setFrom('activate@skillsmart.com', 'Activate Account');
-            $email->setTo($user_email);
-
-            $email->setSubject('Activate Account | Skillsmart');
-            $email->setMessage($message);
-
-            $email->send();
-
-            $email->printDebugger(['headers']);
-
+            $message = "Please activate your account. " . anchor('activate/' . $values['link'], 'Activate Now', '');
 
             $userModel = new UserModel();
             $query = $userModel->insert($values);
             if (!$query) {
                 return  redirect()->to('register')->with('fail', 'Something went wrong. Please try again.');
             } else {
-                return  redirect()->to('register')->with('success', 'Account created successfully. Please verify email.');
+                $email = \Config\Services::email();
+
+                $email->setFrom('skillssmart5@gmail.com', 'Skill Smart');
+                $email->setTo($user_email);
+
+                $email->setSubject('Activate your account | Skillsmart');
+                $email->setMessage($message);
+
+                $email->send();
+
+                $email->printDebugger(['headers']);
+
+                return  redirect()->to('register')->with('success', 'Account created successfully. Please activate account using link sent to email.');
             }
         }
     }
