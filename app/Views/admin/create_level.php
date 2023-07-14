@@ -34,7 +34,7 @@
 
     <div class="right _box">
       <div class="account _box">
-        <h3> Add Course </h3>
+        <h3> Add Level </h3>
         <form class="login_form">
           <select class="login_formele">
 
